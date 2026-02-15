@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+
+  subscription  Subscription?
+  interactions  BriefInteraction[]
+  stockPositions StockPosition[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   // active, canceled, past_due, trialing
+  planName  String   // Free, Pro, Enterprise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model BriefInteraction {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String
+  itemType   String   // build_idea, interview_question, quote
+  status     String   // interested, not_interested, seen, done
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, itemId])
+  @@map("brief_interactions")
+}
+
+model StockPosition {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker    String
+  shares    Float
+  avgCost   Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, ticker])
+  @@map("stock_positions")
+}
